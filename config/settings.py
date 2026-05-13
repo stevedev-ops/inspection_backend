@@ -5,9 +5,9 @@ import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-development-key-only'
-DEBUG = True
-ALLOWED_HOSTS = ['inspection-backend-k3t7.onrender.com', 'localhost', '127.0.0.1']
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-development-key-only')
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
+ALLOWED_HOSTS = ['inspection-backend-3bdb.onrender.com', 'localhost', '127.0.0.1']
 
 INSTALLED_APPS = [
     'cloudinary_storage',
@@ -38,7 +38,18 @@ CLOUDINARY_STORAGE = {
     'PREFIX': 'ipcms_media'
 }
 
+STORAGES = {
+    "default": {
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
+# Backward compatibility for older apps
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -100,14 +111,16 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOW_ALL_ORIGINS = True  # Keep for broad access, but explicit lists are safer
 CORS_ALLOWED_ORIGINS = [
-    "https://inspection-frontend-liart.vercel.app",
+    "https://inspection-fronend.vercel.app",
+    "https://inspection.hasbu.co.ke",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://inspection-frontend-liart.vercel.app",
-    "https://inspection-backend-k3t7.onrender.com",
+    "https://inspection-fronend.vercel.app",
+    "https://inspection.hasbu.co.ke",
+    "https://inspection-backend-3bdb.onrender.com",
 ]
 
 # Render/Vercel Proxy Settings

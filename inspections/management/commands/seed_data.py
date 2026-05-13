@@ -70,61 +70,86 @@ class Command(BaseCommand):
         self.stdout.write("Wiping existing businesses for a fresh seed...")
         Business.objects.all().delete()
 
-        self.stdout.write("Loading SIMPLIFIED DATA.xlsx for businesses...")
-        
         file_path = 'data/SIMPLIFIED DATA.xlsx'
         try:
-            df = pd.read_excel(file_path)
+            xl = pd.ExcelFile(file_path)
+            sheet_names = xl.sheet_names
         except Exception as e:
             self.stdout.write(self.style.ERROR(f"Could not load excel file: {e}"))
             return
 
-        businesses_created = 0
+        businesses_to_create = []
+        total_created = 0
         
-        for index, row in df.iterrows():
-            business_name = str(row.get('Business Name', '')).strip()
-            if not business_name or business_name.lower() == 'nan':
+        # Subcounties list to help identify regional sheets
+        subcounties_list = [
+            'Dagoretti North', 'Dagoretti South', 'Embakasi Central', 'Embakasi East', 
+            'Embakasi North', 'Embakasi South', 'Embakasi West', 'Kamkunji', 
+            'Kasarani', 'Kibra', 'Langata', 'Makadara', 'Mathare', 
+            'Roysambu', 'Ruaraka', 'Starehe', 'Westlands'
+        ]
+
+        for sheet_name in sheet_names:
+            if sheet_name == 'Sheet2':
                 continue
                 
-            permit_no = str(row.get('Permit No.', '')).strip()
-            if permit_no.lower() == 'nan':
-                permit_no = None
-
-            subcounty_name = str(row.get('Subcounty Name', '')).strip()
-            if subcounty_name.lower() == 'nan': subcounty_name = None
+            self.stdout.write(f"Processing sheet: {sheet_name}...")
+            df = xl.parse(sheet_name)
             
-            ward_name = str(row.get('Ward Name', '')).strip()
-            if ward_name.lower() == 'nan': ward_name = None
-
-            building_name = str(row.get('Building Name', '')).strip()
-            if building_name.lower() == 'nan': building_name = None
+            # Determine subcounty from sheet name if not in column
+            default_subcounty = sheet_name if sheet_name in subcounties_list else None
             
-            street_name = str(row.get('Street Name', '')).strip()
-            if street_name.lower() == 'nan': street_name = None
-            
-            plot_no = str(row.get('Plot No.', '')).strip()
-            if plot_no.lower() == 'nan': plot_no = None
+            for index, row in df.iterrows():
+                business_name = str(row.get('Business Name', '')).strip()
+                if not business_name or business_name.lower() == 'nan':
+                    continue
+                    
+                permit_no = str(row.get('Permit No.', '')).strip()
+                if permit_no.lower() == 'nan':
+                    permit_no = None
 
-            contact_phone = str(row.get('Contact Person Mobile No', '')).strip()
-            if contact_phone.lower() == 'nan': contact_phone = None
+                subcounty_name = str(row.get('Subcounty Name', '')).strip()
+                if subcounty_name.lower() == 'nan' or not subcounty_name:
+                    subcounty_name = default_subcounty
+                
+                ward_name = str(row.get('Ward Name', '')).strip()
+                if ward_name.lower() == 'nan': ward_name = None
 
-            contact_email = str(row.get('Contact Person Email', '')).strip()
-            if contact_email.lower() == 'nan': contact_email = None
+                building_name = str(row.get('Building Name', '')).strip()
+                if building_name.lower() == 'nan': building_name = None
+                
+                street_name = str(row.get('Street Name', '')).strip()
+                if street_name.lower() == 'nan': street_name = None
+                
+                plot_no = str(row.get('Plot No.', '')).strip()
+                if plot_no.lower() == 'nan': plot_no = None
 
-            Business.objects.create(
-                business_name=business_name,
-                permit_no=permit_no,
-                subcounty_name=subcounty_name,
-                ward_name=ward_name,
-                building_name=building_name,
-                street_name=street_name,
-                plot_no=plot_no,
-                contact_phone=contact_phone,
-                contact_email=contact_email
-            )
-            businesses_created += 1
+                contact_phone = str(row.get('Contact Person Mobile No', '')).strip()
+                if contact_phone.lower() == 'nan': contact_phone = None
 
-            if businesses_created % 500 == 0:
-                self.stdout.write(f"Created {businesses_created} businesses...")
+                contact_email = str(row.get('Contact Person Email', '')).strip()
+                if contact_email.lower() == 'nan': contact_email = None
 
-        self.stdout.write(self.style.SUCCESS(f"Finished inserting {businesses_created} businesses."))
+                businesses_to_create.append(Business(
+                    business_name=business_name,
+                    permit_no=permit_no,
+                    subcounty_name=subcounty_name,
+                    ward_name=ward_name,
+                    building_name=building_name,
+                    street_name=street_name,
+                    plot_no=plot_no,
+                    contact_phone=contact_phone,
+                    contact_email=contact_email
+                ))
+
+                if len(businesses_to_create) >= 1000:
+                    Business.objects.bulk_create(businesses_to_create)
+                    total_created += len(businesses_to_create)
+                    self.stdout.write(f"Inserted {total_created} businesses...")
+                    businesses_to_create = []
+
+        if businesses_to_create:
+            Business.objects.bulk_create(businesses_to_create)
+            total_created += len(businesses_to_create)
+
+        self.stdout.write(self.style.SUCCESS(f"Finished inserting {total_created} businesses across all sheets."))
