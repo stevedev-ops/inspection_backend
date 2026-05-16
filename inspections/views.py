@@ -343,6 +343,19 @@ class BusinessApplicationViewSet(viewsets.ModelViewSet):
             return BusinessApplication.objects.filter(inspector__created_by=user)
         return BusinessApplication.objects.filter(inspector=user)
 
+    def create(self, request, *args, **kwargs):
+        business_id = request.data.get('business')
+        if BusinessApplication.objects.filter(
+            business_id=business_id, 
+            inspector=request.user, 
+            status='active'
+        ).exists():
+            return Response(
+                {'error': 'You already have an active application for this business.'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        return super().create(request, *args, **kwargs)
+
     def perform_create(self, serializer):
         serializer.save(inspector=self.request.user)
 

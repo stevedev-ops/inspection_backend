@@ -67,6 +67,10 @@ class Inspection(models.Model):
     photo_meta = models.JSONField(default=list, blank=True)
     notes = models.TextField(null=True, blank=True)
     
+    # Form Customization
+    form_type = models.CharField(max_length=50, default='standard', db_index=True) # standard, ipm_audit
+    ipm_data = models.JSONField(default=dict, blank=True)
+
     status = models.CharField(max_length=50, default='completed')
     is_draft = models.BooleanField(default=False)
     approval_status = models.CharField(max_length=50, default='pending')
@@ -81,6 +85,10 @@ class Inspection(models.Model):
     payment_status = models.CharField(max_length=50, default='pending')
     finance_verification_notes = models.TextField(null=True, blank=True)
     
+    # Feedback from NCCG Reviewers
+    nccg_notes = models.TextField(null=True, blank=True)
+    decline_reason = models.CharField(max_length=100, null=True, blank=True)
+
     # Audit Fee Breakdowns (KES)
     ipm_audit = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
     ipm_nccg = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
