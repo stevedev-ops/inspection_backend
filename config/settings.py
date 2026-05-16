@@ -57,7 +57,9 @@ else:
         },
     }
 
-# Backward compatibility for older apps - removed to avoid conflict with STORAGES in Django 5.0+
+# Backward compatibility for older apps like django-cloudinary-storage
+DEFAULT_FILE_STORAGE = STORAGES["default"]["BACKEND"]
+STATICFILES_STORAGE = STORAGES["staticfiles"]["BACKEND"]
 
 
 MIDDLEWARE = [
