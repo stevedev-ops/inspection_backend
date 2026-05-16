@@ -38,18 +38,27 @@ CLOUDINARY_STORAGE = {
     'PREFIX': 'ipcms_media'
 }
 
-STORAGES = {
-    "default": {
-        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
-    },
-}
+if os.getenv('CLOUDINARY_STORAGE_API_KEY'):
+    STORAGES = {
+        "default": {
+            "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
+else:
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
 
-# Backward compatibility for older apps
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+# Backward compatibility for older apps - removed to avoid conflict with STORAGES in Django 5.0+
+
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -121,6 +130,7 @@ CSRF_TRUSTED_ORIGINS = [
     "https://inspection-fronend.vercel.app",
     "https://inspection.hasbu.co.ke",
     "https://inspection-backend-3bdb.onrender.com",
+    "http://localhost:5173",
 ]
 
 # Render/Vercel Proxy Settings

@@ -78,10 +78,11 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR(f"Could not load excel file: {e}"))
             return
 
+        existing_permits = set()
         businesses_to_create = []
         total_created = 0
-        
-        # Subcounties list to help identify regional sheets
+        skipped_duplicates = 0
+
         subcounties_list = [
             'Dagoretti North', 'Dagoretti South', 'Embakasi Central', 'Embakasi East', 
             'Embakasi North', 'Embakasi South', 'Embakasi West', 'Kamkunji', 
@@ -101,34 +102,41 @@ class Command(BaseCommand):
             
             for index, row in df.iterrows():
                 business_name = str(row.get('Business Name', '')).strip()
-                if not business_name or business_name.lower() == 'nan':
+                if not business_name or business_name.lower() in ['nan', 'none', '']:
                     continue
                     
                 permit_no = str(row.get('Permit No.', '')).strip()
-                if permit_no.lower() == 'nan':
+                if not permit_no or permit_no.lower() in ['nan', 'none', '', 'null']:
                     permit_no = None
+                
+                # Check for duplicates across all sheets
+                if permit_no:
+                    if permit_no in existing_permits:
+                        skipped_duplicates += 1
+                        continue
+                    existing_permits.add(permit_no)
 
                 subcounty_name = str(row.get('Subcounty Name', '')).strip()
-                if subcounty_name.lower() == 'nan' or not subcounty_name:
+                if subcounty_name.lower() in ['nan', ''] or not subcounty_name:
                     subcounty_name = default_subcounty
                 
                 ward_name = str(row.get('Ward Name', '')).strip()
-                if ward_name.lower() == 'nan': ward_name = None
+                if ward_name.lower() in ['nan', '']: ward_name = None
 
                 building_name = str(row.get('Building Name', '')).strip()
-                if building_name.lower() == 'nan': building_name = None
+                if building_name.lower() in ['nan', '']: building_name = None
                 
                 street_name = str(row.get('Street Name', '')).strip()
-                if street_name.lower() == 'nan': street_name = None
+                if street_name.lower() in ['nan', '']: street_name = None
                 
                 plot_no = str(row.get('Plot No.', '')).strip()
-                if plot_no.lower() == 'nan': plot_no = None
+                if plot_no.lower() in ['nan', '']: plot_no = None
 
                 contact_phone = str(row.get('Contact Person Mobile No', '')).strip()
-                if contact_phone.lower() == 'nan': contact_phone = None
+                if contact_phone.lower() in ['nan', '']: contact_phone = None
 
                 contact_email = str(row.get('Contact Person Email', '')).strip()
-                if contact_email.lower() == 'nan': contact_email = None
+                if contact_email.lower() in ['nan', '']: contact_email = None
 
                 businesses_to_create.append(Business(
                     business_name=business_name,
@@ -145,11 +153,12 @@ class Command(BaseCommand):
                 if len(businesses_to_create) >= 1000:
                     Business.objects.bulk_create(businesses_to_create)
                     total_created += len(businesses_to_create)
-                    self.stdout.write(f"Inserted {total_created} businesses...")
+                    self.stdout.write(f"Inserted {total_created} businesses... (Skipped {skipped_duplicates} duplicates)")
                     businesses_to_create = []
 
         if businesses_to_create:
             Business.objects.bulk_create(businesses_to_create)
             total_created += len(businesses_to_create)
 
-        self.stdout.write(self.style.SUCCESS(f"Finished inserting {total_created} businesses across all sheets."))
+        self.stdout.write(self.style.SUCCESS(f"Finished. Created {total_created} businesses. Skipped {skipped_duplicates} duplicates."))
+

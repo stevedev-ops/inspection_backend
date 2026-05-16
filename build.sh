@@ -8,22 +8,8 @@ pip install -r requirements.txt
 python manage.py collectstatic --no-input
 python manage.py migrate
 
-# Seed business data from Excel if the table is empty
-cat << 'PYEOF' | python manage.py shell
-from inspections.models import Business, SystemSetting
-if Business.objects.count() == 0:
-    import subprocess
-    result = subprocess.run(['python', 'manage.py', 'seed_data'], capture_output=True, text=True)
-    print(result.stdout)
-    print(result.stderr)
-else:
-    print(f"Skipping seed — {Business.objects.count()} businesses already in DB.")
-
-# Ensure fees are seeded
-import subprocess
-result = subprocess.run(['python', 'manage.py', 'seed_fees'], capture_output=True, text=True)
-print(result.stdout)
-PYEOF
+# Migration only
+python manage.py migrate
 
 # Automatically create a super admin on deployment if it doesn't exist
 cat << EOF | python manage.py shell
