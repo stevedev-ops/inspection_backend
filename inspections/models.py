@@ -49,6 +49,7 @@ class Inspection(models.Model):
     
     # SQLite friendly JSON fields instead of postgres ArrayField
     personnel = models.JSONField(default=list, blank=True)
+    people_on_ground = models.JSONField(default=list, blank=True)
     areas_affected = models.JSONField(default=list, blank=True)
     pest_types = models.JSONField(default=list, blank=True)
     chemicals_used = models.JSONField(default=list, blank=True)
